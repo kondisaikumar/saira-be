@@ -5,6 +5,7 @@ import com.saira.sairarestful.dtos.LoginUserDto;
 import com.saira.sairarestful.dtos.RegisterUserDto;
 import com.saira.sairarestful.entity.User;
 import com.saira.sairarestful.service.AuthenticationService;
+import com.saira.sairarestful.service.JwtService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,14 +17,17 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-
+// Enable CORS for this method or controller
+@CrossOrigin(origins = "http://localhost:4200")
 @RequestMapping("/auth")
 @RestController
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
+    private final JwtService jwtService;
 
-    public AuthenticationController(AuthenticationService authenticationService) {
+    public AuthenticationController(AuthenticationService authenticationService,JwtService jwtService) {
         this.authenticationService = authenticationService;
+        this.jwtService = jwtService;
     }
     @PostMapping("/signup")
     public ResponseEntity<User> register(
@@ -37,17 +41,9 @@ public class AuthenticationController {
             @RequestBody LoginUserDto loginUserDto
     ) {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
+        String jwtToken = jwtService.generateToken(authenticatedUser);
 
-        // Placeholder for JWT token generation logic
-        String jwtToken = "dummyToken"; // Replace with actual JWT generation logic
-        LoginResponseDto loginResponse = new LoginResponseDto()
-                .setToken(jwtToken)
-                .setExpiresIn(
-                        ChronoUnit.MINUTES.between(
-                                Instant.now(),
-                                Instant.now().plus(30, ChronoUnit.MINUTES)
-                        )
-                );
+        LoginResponseDto loginResponse = new LoginResponseDto().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
 
         return ResponseEntity.ok(loginResponse);
     }
